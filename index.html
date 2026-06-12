@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>유천 라운지</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+        :root {
+            --brand-orange: #FF6B00;
+            --brand-dark: #2D2D2D;
+            --bg-color: #F8F9FA;
+            --theme-relax: #2E7D32;
+            --theme-social: #FF6B00;
+            --theme-family: #6A1B9A;
+            --theme-date: #E11D48;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
+        body { background-color: #E9ECEF; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+        #app-frame {
+            width: 100%; max-width: 390px; height: 100vh; max-height: 844px;
+            background-color: var(--bg-color); position: relative; overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: flex; flex-direction: column;
+        }
+        @media (min-width: 400px) { #app-frame { border-radius: 36px; height: 844px; border: 12px solid #111; } }
+
+        /* --- 🚀 스플래시 인트로 애니메이션 --- */
+        #splash-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #1A1A1A, #2D2D2D);
+            z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.6s ease-out;
+        }
+        .splash-logo {
+            font-size: 2.8rem; font-weight: 900; color: var(--brand-orange);
+            transform: translateY(50px) scale(0.8); opacity: 0;
+            animation: flyIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+        .splash-welcome {
+            font-size: 1.1rem; margin-top: 15px; color: #E2E8F0; letter-spacing: 1px;
+            opacity: 0; animation: fadeInIntro 1s ease 0.6s forwards;
+        }
+        .splash-btn {
+            margin-top: 60px; background: var(--brand-orange); color: white; border: none;
+            padding: 15px 35px; border-radius: 30px; font-size: 1.1rem; font-weight: 700; cursor: pointer;
+            opacity: 0; animation: fadeInIntro 1s ease 1.2s forwards, pulseBtn 2s infinite 2.2s;
+            box-shadow: 0 4px 15px rgba(255, 107, 0, 0.4);
+        }
+        
+        @keyframes flyIn { to { transform: translateY(0) scale(1); opacity: 1; } }
+        @keyframes fadeInIntro { to { opacity: 1; } }
+        @keyframes pulseBtn {
+            0% { transform: scale(1); box-shadow: 0 4px 15px rgba(255, 107, 0, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 4px 25px rgba(255, 107, 0, 0.6); }
+            100% { transform: scale(1); box-shadow: 0 4px 15px rgba(255, 107, 0, 0.4); }
+        }
+
+        /* --- 공통 페이지 스타일 --- */
+        .page { display: none; flex-direction: column; height: 100%; overflow-y: auto; padding-bottom: 90px; animation: fadeIn 0.3s ease-out; }
+        .page.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        header { background: white; padding: 15px 20px; border-bottom: 1px solid #EEE; position: sticky; top: 0; z-index: 10; display: flex; justify-content: space-between; align-items: center;}
+        header h1 { font-size: 1.15rem; font-weight: 800; color: var(--brand-dark); }
+        .header-icons { display: flex; gap: 15px; align-items: center; font-size: 1.1rem; color: var(--brand-dark); cursor: pointer; }
+        
+        .content-wrap { padding: 20px; }
+
+        /* --- 홈 화면 --- */
+        .greeting { font-size: 1.4rem; font-weight: 800; color: var(--brand-dark); line-height: 1.3; margin-bottom: 15px; }
+        .parking-util { background: white; border-radius: 16px; padding: 18px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .parking-status { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .parking-status h3 { font-size: 1rem; color: var(--brand-dark); }
+        .parking-status .count { font-size: 1.3rem; font-weight: 800; color: var(--brand-orange); }
+        .navi-btn { width: 100%; background: #F1F5F9; color: var(--brand-dark); border: none; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 0.9rem; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; text-decoration: none;}
+        
+        .shortcut-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
+        .shortcut-item { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; }
+        .shortcut-icon { width: 45px; height: 45px; border-radius: 14px; display: flex; justify-content: center; align-items: center; color: white; font-size: 1.2rem; }
+        .shortcut-text { font-size: 0.75rem; font-weight: 600; color: var(--brand-dark); }
+
+        /* 🎪 플리마켓 물리 버튼 */
+        .flea-market-btn { background: white; border: 1px solid #E5E7EB; border-radius: 16px; padding: 16px 20px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .live-badge-pulse { background: #EF4444; color: white; font-size: 0.65rem; font-weight: 800; padding: 4px 8px; border-radius: 8px; animation: pulseLive 1.5s infinite; }
+        @keyframes pulseLive { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* 배너 스타일 2종 (가마치통닭용 & 온누리용) */
+        .banner-gamachi { background: linear-gradient(135deg, #FACC15, #F59E0B); color: var(--brand-dark); border-radius: 16px; padding: 18px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2); cursor: pointer; position: relative; overflow: hidden; }
+        .banner-gamachi h3 { font-size: 1.1rem; margin-bottom: 5px; font-weight: 800;}
+        .banner-gamachi p { font-size: 0.8rem; opacity: 0.9; line-height: 1.4; font-weight: 600; }
+        .banner-icon { position: absolute; right: 10px; bottom: 5px; font-size: 3.5rem; opacity: 0.3; transform: rotate(-10deg); }
+
+        .banner-onnuri { background: linear-gradient(135deg, var(--brand-orange), #FF8A00); color: white; border-radius: 16px; padding: 18px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(255, 107, 0, 0.2); }
+        .banner-onnuri h3 { font-size: 1.1rem; margin-bottom: 5px; font-weight: 800;}
+        .banner-onnuri p { font-size: 0.8rem; opacity: 0.95; line-height: 1.4; }
+
+        .hot-issue { background: white; border-radius: 16px; padding: 15px; border: 1px solid #E5E7EB; display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+        .hot-badge { background: #FEE2E2; color: #EF4444; font-size: 0.7rem; font-weight: 800; padding: 4px 8px; border-radius: 8px; flex-shrink: 0; }
+
+        /* --- 🎪 플리마켓 전용 뷰 (오버레이) --- */
+        #flea-market-view { display: none; flex-direction: column; height: 100%; overflow-y: auto; background: var(--bg-color); position: absolute; top:0; left:0; width: 100%; z-index: 25; animation: fadeIn 0.3s;}
+        .flea-header { display: flex; align-items: center; padding: 15px 20px; background: white; border-bottom: 1px solid #EEE; position: sticky; top: 0; z-index: 10;}
+        .flea-back-btn { font-size: 1.2rem; color: var(--brand-dark); border: none; background: none; cursor: pointer; padding-right: 15px;}
+        .flea-header h2 { font-size: 1.15rem; font-weight: 800; color: var(--brand-dark); }
+        .flea-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; padding-bottom: 90px;}
+        .flea-card { background: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); overflow: hidden; display: flex; flex-direction: column; border: 1px solid #E5E7EB;}
+        /* 썸네일 이미지 영역 변경: 사진이 꽉 차게 */
+        .flea-img { height: 130px; width: 100%; background-color: #F1F5F9; }
+        .flea-info { padding: 15px 12px; display: flex; flex-direction: column; gap: 6px; flex: 1;}
+        .flea-badge { align-self: flex-start; background: #FEE2E2; color: #EF4444; font-size: 0.7rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; margin-bottom: 2px;}
+        .flea-title { font-size: 0.95rem; font-weight: 800; color: var(--brand-dark); line-height: 1.3;}
+        .flea-desc { font-size: 0.75rem; color: #64748B; line-height: 1.4; margin-bottom: 5px;}
+        .flea-pay-type { margin-top: auto; font-size: 0.75rem; font-weight: 700; color: #10B981; display: flex; align-items: center; gap: 4px; padding-top: 10px; border-top: 1px solid #F1F5F9;}
+
+        /* --- 코스 안내 뷰 (오버레이로만 작동) --- */
+        #roadmap-view { display: none; flex-direction: column; padding: 20px; padding-bottom: 90px; height: 100%; overflow-y: auto; background: #F8F9FA; position: absolute; top:0; left:0; width: 100%; z-index: 20; animation: fadeIn 0.3s;}
+        .roadmap-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .back-btn { font-size: 1.2rem; color: var(--brand-dark); border: none; background: none; cursor: pointer; }
+        .theme-banner { border-radius: 16px; padding: 20px; color: white; margin-bottom: 20px; }
+        .timeline { position: relative; padding-left: 20px; margin-top: 10px; }
+        .timeline::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 0; width: 2px; background: #E5E7EB; }
+        .timeline-item { position: relative; margin-bottom: 20px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; border: 1px solid transparent; transition: 0.2s;}
+        .timeline-item:active { border-color: var(--brand-orange); }
+        .timeline-item::before { content: ''; position: absolute; left: -25px; top: 15px; width: 12px; height: 12px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 2px #E5E7EB; background: var(--current-theme, var(--brand-orange)); }
+        .walk-badge { display: inline-flex; align-items: center; gap: 4px; background: #F1F5F9; color: #475569; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 12px; margin-top: 8px; }
+        .route-map-btn { width: 100%; background: var(--brand-dark); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 1rem; cursor: pointer; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 8px;}
+
+        /* --- 유천맵 --- */
+        #tab-map { overflow: hidden; }
+        .map-wrapper { display: flex; flex-direction: column; height: 100%; position: relative; }
+        .filter-container { display: flex; align-items: center; background: white; border-bottom: 1px solid #EEE; position: relative; z-index: 5; }
+        .scroll-btn { background: white; border: none; font-size: 1rem; color: #64748B; padding: 0 12px; height: 100%; cursor: pointer; display: flex; align-items: center; }
+        .filter-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 15px 0; scrollbar-width: none; flex: 1; scroll-behavior: smooth; }
+        .filter-scroll::-webkit-scrollbar { display: none; }
+        .filter-chip { flex-shrink: 0; background: #F1F5F9; border: 1px solid #E2E8F0; color: #475569; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .filter-chip.active { background: var(--brand-orange); color: white; border-color: var(--brand-orange); }
+        .full-map { flex: 1; width: 100%; background: #E5E7EB; position: relative; z-index: 1;}
+        #kakao-map { width: 100%; height: 100%; }
+        .fab-parking { position: absolute; bottom: 20px; right: 20px; background: white; width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; color: var(--brand-dark); box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10; cursor: pointer; border: 1px solid #E5E7EB; }
+
+        /* 공용 바텀 시트 */
+        .bottom-sheet { position: absolute; bottom: -100%; left: 0; width: 100%; background: white; border-top-left-radius: 24px; border-top-right-radius: 24px; padding: 25px 20px; box-shadow: 0 -10px 40px rgba(0,0,0,0.15); z-index: 50; transition: bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); padding-bottom: 40px;}
+        .bottom-sheet.active { bottom: 0; }
+        .sheet-handle { width: 40px; height: 5px; background: #E2E8F0; border-radius: 3px; margin: 0 auto 15px auto; }
+        .close-sheet-btn { position: absolute; top: 20px; right: 20px; font-size: 1.4rem; color: #9CA3AF; cursor: pointer; padding: 5px; }
+        .shop-category { font-size: 0.8rem; color: var(--brand-orange); font-weight: 700; margin-bottom: 5px; }
+        .shop-name { font-size: 1.4rem; font-weight: 800; color: var(--brand-dark); margin-bottom: 10px; }
+        .shop-info-row { display: flex; align-items: flex-start; gap: 10px; font-size: 0.9rem; color: #64748B; margin-bottom: 8px; line-height: 1.4;}
+        .shop-info-row i { width: 16px; text-align: center; margin-top: 3px;}
+        .map-marker-overlay { background: white; border: 2px solid var(--marker-color); border-radius: 20px; padding: 4px 10px; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); white-space: nowrap; }
+        .map-marker-num { background: var(--marker-color); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 0.72rem; font-weight: bold; }
+        .map-marker-text { font-size: 0.78rem; font-weight: 700; color: var(--brand-dark); }
+
+        /* --- 결제 & 포인트 화면 --- */
+        .point-exchange-box { background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 12px; padding: 15px; margin-top: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .point-exchange-box button { background: var(--brand-orange); color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+        .benefit-box { display: flex; align-items: flex-start; gap: 15px; background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #E5E7EB; }
+        .benefit-icon { width: 40px; height: 40px; border-radius: 50%; background: #FFF7ED; color: var(--brand-orange); display: flex; justify-content: center; align-items: center; font-size: 1.2rem; flex-shrink: 0; }
+
+        /* --- 테라스 --- */
+        .terrace-card { background: white; padding: 20px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .terrace-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .t-avatar { width: 36px; height: 36px; border-radius: 50%; background: #E2E8F0; display: flex; justify-content: center; align-items: center; color: #64748B; font-size: 1rem; }
+        .t-user-info .t-name { font-weight: 800; font-size: 0.95rem; color: var(--brand-dark); }
+        .t-user-info .t-level { font-size: 0.75rem; color: #9CA3AF; font-weight: 600; margin-top: 2px;}
+        .t-text { font-size: 0.95rem; color: var(--brand-dark); line-height: 1.5; margin-bottom: 15px; }
+        .t-images { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .t-image-ph { background: #F1F5F9; border-radius: 12px; height: 120px; display: flex; justify-content: center; align-items: center; color: #9CA3AF; font-size: 0.8rem; }
+        .t-reward { display: inline-block; background: #FFF7ED; color: #C2410C; font-size: 0.75rem; font-weight: 800; padding: 6px 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #FFEDD5;}
+        .t-footer { display: flex; justify-content: space-between; border-top: 1px solid #F1F5F9; padding-top: 12px; color: #64748B; font-size: 0.85rem; }
+        
+        /* --- 내 정보 (마이페이지) --- */
+        .profile-header { background: white; padding: 30px 20px; border-radius: 16px; display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); margin-bottom: 25px; }
+        .p-avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--brand-dark); color: white; display: flex; justify-content: center; align-items: center; font-size: 1.8rem; }
+        .p-name { font-size: 1.4rem; font-weight: 800; color: var(--brand-dark); margin-bottom: 5px; }
+        .p-badge { display: inline-block; background: #FEF3C7; color: #D97706; padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; }
+        .my-section-title { font-size: 1.1rem; font-weight: 800; color: var(--brand-dark); margin-bottom: 15px; }
+        .saved-list { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: none; margin-bottom: 25px; }
+        .saved-item { background: white; padding: 15px; border-radius: 12px; min-width: 140px; border: 1px solid #E5E7EB; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .saved-item h4 { font-size: 0.95rem; color: var(--brand-dark); margin-bottom: 5px; }
+        .saved-item p { font-size: 0.75rem; color: #64748B; }
+
+        /* --- 사장님 대시보드 모달 --- */
+        #merchant-view { display: none; flex-direction: column; padding: 20px; height: 100%; overflow-y: auto; background: #1E293B; position: absolute; top:0; left:0; width: 100%; z-index: 60;}
+        .dash-card { background: #334155; padding: 20px; border-radius: 16px; margin-bottom: 15px; color: white;}
+        .dash-card h4 { font-size: 0.9rem; color: #94A3B8; margin-bottom: 10px; }
+        .dash-card .dash-num { font-size: 2rem; font-weight: 800; color: #38BDF8; }
+
+        /* 하단 네비게이션 */
+        nav { position: absolute; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #EEE; padding-bottom: 15px; z-index: 30;}
+        .nav-item { flex: 1; text-align: center; padding: 12px 0; color: #9CA3AF; cursor: pointer; font-size: 0.7rem; font-weight: 600; transition: 0.2s;}
+        .nav-item i { display: block; font-size: 1.2rem; margin-bottom: 4px; }
+        .nav-item.active { color: var(--brand-orange); }
+        .nav-item.active i { transform: translateY(-2px); }
+    </style>
+    <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=59b534bce69b5bc59a048ff0047bd593"></script>
+</head>
+<body>
+
+<div id="app-frame">
+    
+    <!-- 🚀 스플래시 화면 -->
+    <div id="splash-screen">
+        <h1 class="splash-logo">유천 라운지</h1>
+        <p class="splash-welcome">유천 라운지에 환영합니다</p>
+        <button class="splash-btn" onclick="enterApp()">입장하기</button>
+    </div>
+
+    <!-- 1. 홈 화면 -->
+    <div id="tab-home" class="page active">
+        <header>
+            <h1>유천 라운지</h1>
+            <div class="header-icons">
+                <i class="fa-solid fa-chart-line" onclick="openMerchantMode()" style="color: #64748B;" title="사장님 모드"></i>
+                <i class="fa-regular fa-bell"></i>
+            </div>
+        </header>
+        <div class="content-wrap">
+            <!-- 가마치통닭 겉바속촉 배너 (맨 위로 배치) -->
+            <div class="banner-gamachi" onclick="switchTab('map'); setTimeout(()=>openBottomSheetFromCourse('가마치통닭 유천점'), 100);">
+                <h3>겉바속촉의 정석, 가마치통닭</h3>
+                <p>퇴근길, 부담 없이 즐기는 완벽한 1인 1닭!</p>
+                <i class="fa-solid fa-drumstick-bite banner-icon"></i>
+            </div>
+
+            <div class="greeting">목요일 밤,<br>라운지에서 하루를 마무리하세요 🌙</div>
+            <div class="parking-util">
+                <div class="parking-status">
+                    <div>
+                        <span style="font-size: 0.75rem; color: #64748B;">유천 공영 주차장</span>
+                        <h3>현재 여유 공간</h3>
+                    </div>
+                    <div class="count">25대</div>
+                </div>
+                <a href="https://map.kakao.com/link/to/유천제1공영주차장,37.757830,128.872038" target="_blank" class="navi-btn"><i class="fa-solid fa-location-arrow"></i> 카카오/티맵 길안내 시작</a>
+            </div>
+            
+            <h3 style="font-size: 0.95rem; margin-bottom: 12px; color: var(--brand-dark);">추천 코스 바로가기</h3>
+            <div class="shortcut-grid">
+                <div class="shortcut-item" onclick="openRoadmap('relax')"><div class="shortcut-icon" style="background: var(--theme-relax);"><i class="fa-solid fa-mug-hot"></i></div><div class="shortcut-text">릴렉스</div></div>
+                <div class="shortcut-item" onclick="openRoadmap('social')"><div class="shortcut-icon" style="background: var(--theme-social);"><i class="fa-solid fa-beer-mug-empty"></i></div><div class="shortcut-text">소셜</div></div>
+                <div class="shortcut-item" onclick="openRoadmap('family')"><div class="shortcut-icon" style="background: var(--theme-family);"><i class="fa-solid fa-children"></i></div><div class="shortcut-text">패밀리</div></div>
+                <div class="shortcut-item" onclick="openRoadmap('date')"><div class="shortcut-icon" style="background: var(--theme-date);"><i class="fa-solid fa-heart"></i></div><div class="shortcut-text">데이트</div></div>
+            </div>
+
+            <!-- 🎪 플리마켓 입장 물리 버튼 -->
+            <div class="flea-market-btn" onclick="openFleaMarket()">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="live-badge-pulse">LIVE</span>
+                    <div>
+                        <h4 style="color: var(--brand-dark); font-size: 0.95rem; margin-bottom: 3px; font-weight: 800;">오늘만 열리는 팝업, 유천 플리마켓 🎪</h4>
+                        <p style="color: #64748B; font-size: 0.75rem; font-weight: 600;">실시간 한정 수량 라인업 구경하기</p>
+                    </div>
+                </div>
+                <i class="fa-solid fa-chevron-right" style="color: #9CA3AF; font-size: 1.2rem;"></i>
+            </div>
+
+            <!-- 온누리상품권 7% 할인 정보 -->
+            <div class="banner-onnuri">
+                <h3>🎁 온누리상품권 상시 7% 할인</h3>
+                <p>유천 올림픽길 120여 개 가맹점에서<br>결제 즉시 할인 혜택을 누리세요!</p>
+            </div>
+
+            <h3 style="font-size: 0.95rem; margin-bottom: 12px; color: var(--brand-dark);">라운지 테라스 핫이슈 💬</h3>
+            <div class="hot-issue" onclick="switchTab('terrace')">
+                <div class="hot-badge">실시간</div>
+                <div>
+                    <h4 style="font-size: 0.9rem; color: var(--brand-dark); margin-bottom: 4px;">구라미한우촌 웨이팅 공유 (+50 pts)</h4>
+                    <p style="font-size: 0.75rem; color: #64748B;">방금 들어갔는데 빈자리 2테이블 남았습니다!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🎪 플리마켓 전용 페이지 (현장 결제 쇼윈도 - 실사진 적용!) -->
+    <div id="flea-market-view">
+        <div class="flea-header">
+            <button class="flea-back-btn" onclick="closeFleaMarket()"><i class="fa-solid fa-chevron-left"></i></button>
+            <h2>오늘의 라인업</h2>
+        </div>
+        
+        <div class="flea-grid">
+            <!-- 1. 구름신 막걸리 -->
+            <div class="flea-card">
+                <div class="flea-img" style="background: url('https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNjAyMDlfMTk4%2FMDAxNzcwNjMzMTI2NjA1.wH1bbs6E4er7BQIsuNjWkDLqVtZh95fD2a4O0KTWSyQg.VLISEGYYn53y3rs2b_M20KmyuIjtq213V4ufDZ-olbYg.JPEG%2FIMG%25A3%25DF4319.jpg&type=sc960_832') center/cover;"></div>
+                <div class="flea-info">
+                    <div class="flea-badge">🚨 잔여 10병!</div>
+                    <div class="flea-title">구름신 막걸리</div>
+                    <div class="flea-desc">강릉 방풍나물로 빚은 프리미엄 전통주</div>
+                    <div class="flea-pay-type"><i class="fa-solid fa-money-bill-wave"></i> 현장 결제 전용</div>
+                </div>
+            </div>
+            
+            <!-- 2. 강릉당 / 강릉 샌드 -->
+            <div class="flea-card">
+                <div class="flea-img" style="background: url('https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNTExMTJfMTAw%2FMDAxNzYyOTMzNTIyODk4.Zs3n05XLRWZFFF6DocSt_pVCKdHA_LfMlznKRFTcpjQg.p7c8sb-SEzx2fCrt6zJuMgUvKr-phZsMulwcq5Vx8Osg.JPEG%2FIMG%25A3%25DF8595.jpg&type=sc960_832') center/cover;"></div>
+                <div class="flea-info">
+                    <div class="flea-badge">🚨 잔여 5박스!</div>
+                    <div class="flea-title">강릉당 & 강릉샌드</div>
+                    <div class="flea-desc">KTX역 필수 기념품! 로컬 구움과자</div>
+                    <div class="flea-pay-type"><i class="fa-solid fa-money-bill-wave"></i> 현장 결제 전용</div>
+                </div>
+            </div>
+
+            <!-- 3. 박이추 커피 -->
+            <div class="flea-card">
+                <div class="flea-img" style="background: url('https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNjAyMjJfMTQ4%2FMDAxNzcxNzI0MTA0OTgy.SppAr9Gh1zrOI2SpFPbC3OSMCh1yE1jXk70YzVssRUAg.gOM1N_pU1KhtO9G8VqQXn5I5DQA5oPd555Zxdx0LBXUg.JPEG%2Foutput%25A3%25DF4119902736.jpg&type=sc960_832') center/cover;"></div>
+                <div class="flea-info">
+                    <div class="flea-badge" style="background:#DBEAFE; color:#16A34A;">🌱 텀블러 지참 할인</div>
+                    <div class="flea-title">박이추 커피 명장</div>
+                    <div class="flea-desc">주말 아침 홈카페족을 위한 특별 원두</div>
+                    <div class="flea-pay-type"><i class="fa-solid fa-money-bill-wave"></i> 현장 결제 전용</div>
+                </div>
+            </div>
+
+            <!-- 4. 강릉 세라믹 스튜디오 -->
+            <div class="flea-card">
+                <div class="flea-img" style="background: url('https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyMTExMDhfNyAg%2FMDAxNjM2MzgzMTU3MzY5.uM5uOV4C3tFZbalenMQHZHRv9KMSdA4sUxWe7cwDqwcg.-kJ1_UIjzS29bwWTmY7t3ikXvesf2DyGO11grqILjf8g.JPEG.kjiand%2F1634549309016.jpg&type=sc960_832') center/cover;"></div>
+                <div class="flea-info">
+                    <div class="flea-badge" style="background:#FEF3C7; color:#D97706;">⚡ 오늘만 20% 할인</div>
+                    <div class="flea-title">세라믹 스튜디오</div>
+                    <div class="flea-desc">청년 작가들이 만든 바다 감성 도자기 식기</div>
+                    <div class="flea-pay-type"><i class="fa-solid fa-money-bill-wave"></i> 현장 결제 전용</div>
+                </div>
+            </div>
+
+            <!-- 5. 바다소담 -->
+            <div class="flea-card">
+                <div class="flea-img" style="background: url('https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAxNjExMjVfNTMg%2FMDAxNDgwMDAzNjQ3NDcz.Ki-RRUkb52A53GxCSdRGJ8ynFJ6GwuI_5ny_Auun5OQg.RlxvAqIIcWMPs5kDavH_ZZJ5Us73Ld9GrRPBA6C6ObAg.JPEG.kimjihye28%2FNaverBlog_20161125_010725_08.jpg&type=sc960_832') center/cover;"></div>
+                <div class="flea-info">
+                    <div class="flea-badge">🚨 잔여 5벌!</div>
+                    <div class="flea-title">바다소담 아동복</div>
+                    <div class="flea-desc">초당동 골목의 친환경 린넨 유아 소품샵</div>
+                    <div class="flea-pay-type"><i class="fa-solid fa-money-bill-wave"></i> 현장 결제 전용</div>
+                </div>
+            </div>
+
+            <!-- 6. 솔향공방 -->
+            <div class="flea-card">
+                <div class="flea-img" style="background: url('https://search.pstatic.net/common/?src=http%3A%2F%2Fblogfiles.naver.net%2FMjAyNTA4MTBfMTM0%2FMDAxNzU0ODEwNzc4NjYw.ud3qnBeD9tM-Td-N732Q_-2Vfu1Si4QozgiCI11hHAgg.FPwVi0xs1QUL8LIcG7eYty6FXEBINgbHrBqWV8Km6-Yg.JPEG%2FKakaoTalk_20250810_144221060_05.jpg&type=sc960_832') center/cover;"></div>
+                <div class="flea-info">
+                    <div class="flea-badge">🚨 체험 3자리!</div>
+                    <div class="flea-title">솔향공방 키트</div>
+                    <div class="flea-desc">안목 해변 조개껍데기 모래 놀이 체험</div>
+                    <div class="flea-pay-type"><i class="fa-solid fa-money-bill-wave"></i> 현장 결제 전용</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2-1. 코스 안내 로드맵 (오버레이 모드) -->
+    <div id="roadmap-view">
+        <div class="roadmap-header">
+            <button class="back-btn" onclick="closeRoadmap()"><i class="fa-solid fa-chevron-left"></i></button>
+            <h2 style="font-size: 1.2rem; font-weight: 700;">상세 코스 안내</h2>
+            <div style="width: 20px;"></div>
+        </div>
+        <div class="theme-banner" id="theme-banner-bg">
+            <h2 id="theme-title" style="font-size: 1.4rem; margin-bottom: 5px;">테마 이름</h2>
+            <p id="theme-subtitle" style="font-size: 0.9rem; opacity: 0.9;">테마 설명</p>
+        </div>
+        <div style="font-size: 0.75rem; color:#64748B; margin-bottom: 10px; text-align: right;">* 탭하여 가게 정보 확인</div>
+        <div class="timeline" id="timeline-container"></div>
+        <button class="route-map-btn" onclick="drawKakaoRoute()"><i class="fa-solid fa-map-location-dot"></i> 지도에서 동선 보기</button>
+    </div>
+
+    <!-- 3. 유천맵 -->
+    <div id="tab-map" class="page">
+        <header><h1>유천맵 (120+)</h1></header>
+        <div class="map-wrapper">
+            <div class="filter-container">
+                <button class="scroll-btn" onclick="scrollFilter(-150)"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="filter-scroll" id="map-filter-scroll">
+                    <div class="filter-chip" onclick="toggleOpenNow(this)" id="filter-open" style="border-color: #10B981; color: #10B981;"><i class="fa-solid fa-power-off"></i> 영업 중</div>
+                    <div class="filter-chip active" onclick="activateFilter(this, 'all')">🗺️ 전체보기</div>
+                    <div class="filter-chip" onclick="activateFilter(this, '든든한 식사')">🍚 든든한 식사</div>
+                    <div class="filter-chip" onclick="activateFilter(this, '분위기·술')">🍶 분위기·술</div>
+                    <div class="filter-chip" onclick="activateFilter(this, '가벼운 한끼')">🍔 가벼운 한끼</div>
+                    <div class="filter-chip" onclick="activateFilter(this, '카페·디저트')">☕ 카페·디저트</div>
+                    <div class="filter-chip" onclick="activateFilter(this, '생활·편의')">🛒 생활·편의</div>
+                </div>
+                <button class="scroll-btn" onclick="scrollFilter(150)"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+            
+            <div id="kakao-map" class="full-map"></div>
+            <div class="fab-parking" onclick="moveToParking()" title="주차장으로 이동"><i class="fa-solid fa-p"></i></div>
+        </div>
+    </div>
+
+    <!-- 4. 결제 화면 -->
+    <div id="tab-pay" class="page">
+        <header><h1>온누리 결제</h1></header>
+        <div class="content-wrap">
+            <div style="background: white; padding: 25px 20px; border-radius: 16px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <p style="font-size: 0.9rem; color: #666;">내 지갑 잔액</p>
+                <h2 style="font-size: 2.2rem; color: var(--brand-dark); margin: 10px 0; font-weight: 800;">35,000 원</h2>
+                <div style="margin: 20px 0; padding: 20px; border: 2px dashed #CBD5E1; border-radius: 12px; background: #F8FAFC;">
+                    <div style="font-family: monospace; font-size: 2.5rem; color: var(--brand-dark); line-height: 0.8; letter-spacing: 2px;">||| |||| || | |||<br><span style="font-size: 0.9rem; letter-spacing: 3px;">1048 2931 0492</span></div>
+                </div>
+            </div>
+
+            <div class="point-exchange-box">
+                <div>
+                    <div style="font-size: 0.8rem; color: #C2410C; font-weight: 700;">내 라운지 포인트</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; color: var(--brand-dark);">1,150 <span style="font-size: 0.9rem;">pts</span></div>
+                </div>
+                <button onclick="alert('1,000원 온누리 할인 쿠폰이 발급되었습니다!')"><i class="fa-solid fa-gift"></i> 쿠폰 교환</button>
+            </div>
+
+            <h3 style="font-size: 1.1rem; margin: 20px 0 15px 0; color: var(--brand-dark);">🎁 유천 라운지 혜택</h3>
+            <div class="benefit-box" style="border-color: #FED7AA; background: #FFF7ED;"><div class="benefit-icon"><i class="fa-solid fa-percent"></i></div><div><h4 style="color: #C2410C; margin-bottom: 4px;">상시 7% 특별 할인</h4><p style="font-size: 0.8rem; color: #666; line-height: 1.4;">결제 즉시 7% 할인이 적용됩니다.</p></div></div>
+            <div class="benefit-box"><div class="benefit-icon" style="background: #F1F5F9; color: #475569;"><i class="fa-solid fa-receipt"></i></div><div><h4 style="color: var(--brand-dark); margin-bottom: 4px;">연말정산 소득공제 40%</h4><p style="font-size: 0.8rem; color: #666; line-height: 1.4;">전통시장 혜택으로 40%가 공제됩니다.</p></div></div>
+        </div>
+    </div>
+
+    <!-- 5. 테라스 -->
+    <div id="tab-terrace" class="page">
+        <header><h1>유천 로컬 테라스</h1><i class="fa-solid fa-pen-to-square"></i></header>
+        <div class="content-wrap">
+            <h2 style="font-size: 1.2rem; margin-bottom: 20px; color: var(--brand-dark);">Live Neighborhood News 💬</h2>
+            
+            <div class="terrace-card">
+                <div class="terrace-header">
+                    <div class="t-avatar" style="background: #DCFCE7; color: #16A34A;"><i class="fa-solid fa-building"></i></div>
+                    <div class="t-user-info">
+                        <div class="t-name">퇴근마렵다</div>
+                        <div class="t-level">Level 4 직장인</div>
+                    </div>
+                </div>
+                <p class="t-text">방금 <strong>구라미한우촌</strong> 들어왔는데 빈자리 딱 2테이블 남았습니다! 금요일 저녁이라 금방 찰 거 같으니 오시는 분들 서두르세요 🏃‍♂️</p>
+                <div class="t-reward">Guramihan-u wait time shared: +50 pts</div>
+                <div class="t-footer">
+                    <div style="display: flex; gap: 12px;"><span><i class="fa-regular fa-heart" style="color: #F43F5E;"></i> 24</span><span><i class="fa-regular fa-comment"></i> 5</span></div>
+                    <div style="color: #D97706; font-weight: 700;"><i class="fa-solid fa-coins"></i> +50 pts</div>
+                </div>
+            </div>
+
+            <div class="terrace-card">
+                <div class="terrace-header">
+                    <div class="t-avatar"><i class="fa-solid fa-user"></i></div>
+                    <div class="t-user-info">
+                        <div class="t-name">유천보안관</div>
+                        <div class="t-level">Level 5 Local Guide</div>
+                    </div>
+                </div>
+                <p class="t-text">가족들이랑 <strong>제주골</strong> 갔는데 양도 많고 애들도 엄청 잘 먹네요 ㅎㅎ 공영주차장 자리도 널널해서 주차 편했습니다.</p>
+                <div class="t-images">
+                    <div class="t-image-ph" style="background: url('https://images.unsplash.com/photo-1544025162-811114cdbb17?auto=format&fit=crop&q=80&w=200') center/cover;"></div>
+                    <div class="t-image-ph" style="background: url('https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&q=80&w=200') center/cover;"></div>
+                </div>
+                <div class="t-reward">Jeju-gol wait time shared: +50 pts</div>
+                <div class="t-footer">
+                    <div style="display: flex; gap: 12px;"><span><i class="fa-regular fa-heart"></i> 14</span><span><i class="fa-regular fa-comment"></i> 3</span></div>
+                    <div style="color: #D97706; font-weight: 700;"><i class="fa-solid fa-coins"></i> +50 pts</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. 내 정보 (마이페이지) -->
+    <div id="tab-myinfo" class="page">
+        <header><h1>내 정보</h1><i class="fa-solid fa-gear"></i></header>
+        <div class="content-wrap">
+            <div class="profile-header">
+                <div class="p-avatar"><i class="fa-solid fa-user"></i></div>
+                <div>
+                    <div class="p-name">퇴근마렵다</div>
+                    <div class="p-badge">👑 Level 4 직장인</div>
+                </div>
+            </div>
+            
+            <h3 class="my-section-title">내 쿠폰함 🎟️</h3>
+            <div class="saved-list">
+                <div class="saved-item" style="border: 2px solid var(--brand-orange); background: #FFF7ED;">
+                    <h4 style="color: #C2410C; font-weight: 800; font-size: 1.1rem; margin-bottom: 2px;">1,000원 할인</h4>
+                    <p style="color: var(--brand-orange); font-weight: 700; margin-bottom: 5px;">온누리 결제 전용</p>
+                    <p style="font-size: 0.7rem; color: #9CA3AF;">2026.06.30 까지</p>
+                </div>
+                <div class="saved-item" style="border: 1px solid #E5E7EB; opacity: 0.6;">
+                    <h4 style="color: var(--brand-dark); font-weight: 700; font-size: 1rem; margin-bottom: 2px;">생맥주 1잔</h4>
+                    <p style="color: #64748B; font-weight: 600; margin-bottom: 5px;">가마치통닭 유천점</p>
+                    <p style="font-size: 0.7rem; color: #EF4444;">사용 완료</p>
+                </div>
+            </div>
+
+            <h3 class="my-section-title">나만의 라운지 저장소 ❤️</h3>
+            <div class="saved-list">
+                <div class="saved-item">
+                    <h4>구라미한우촌</h4>
+                    <p><i class="fa-solid fa-star" style="color:#FACC15;"></i> 4.8 (든든한 식사)</p>
+                </div>
+                <div class="saved-item">
+                    <h4>휴빈커피</h4>
+                    <p><i class="fa-solid fa-star" style="color:#FACC15;"></i> 4.9 (카페·디저트)</p>
+                </div>
+                <div class="saved-item">
+                    <h4>무국적식탁</h4>
+                    <p><i class="fa-solid fa-star" style="color:#FACC15;"></i> 4.7 (분위기·술)</p>
+                </div>
+            </div>
+
+            <h3 class="my-section-title">내가 쓴 동네 소식 ✍️</h3>
+            <div class="terrace-card" style="padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                <p style="font-size: 0.9rem; color: var(--brand-dark); line-height: 1.4; margin-bottom: 8px;">방금 구라미한우촌 들어왔는데 빈자리 딱 2테이블 남았습니다! 금요일 저녁이라 금방 찰 거 같으니 오시는 분들 서두르세요 🏃‍♂️</p>
+                <div style="font-size: 0.75rem; color: #9CA3AF;"><i class="fa-regular fa-heart"></i> 24 &nbsp; <i class="fa-regular fa-comment"></i> 5 &nbsp;|&nbsp; 1시간 전</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 공용 바텀 시트 -->
+    <div class="bottom-sheet" id="shop-bottom-sheet">
+        <div class="sheet-handle" onclick="closeBottomSheet()"></div>
+        <i class="fa-solid fa-xmark close-sheet-btn" onclick="closeBottomSheet()" title="닫기"></i>
+        <div class="shop-category" id="bs-category">카테고리</div>
+        <div class="shop-name" id="bs-name">상호명</div>
+        <div class="shop-info-row"><i class="fa-regular fa-clock"></i> <span id="bs-time">영업시간</span> <span id="bs-status" style="color: #10B981; font-weight: bold; font-size: 0.8rem; margin-left: 5px;">영업중</span></div>
+        <div class="shop-info-row"><i id="bs-menu-icon" class="fa-solid fa-utensils"></i> <span id="bs-menu">대표 메뉴</span></div>
+        <div class="shop-info-row" id="bs-ticket-row"><i class="fa-solid fa-ticket" style="color: var(--brand-orange);"></i> 온누리상품권 7% 결제 가능</div>
+    </div>
+
+    <!-- 사장님 대시보드 모달 -->
+    <div id="merchant-view">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; color: white;">
+            <h2 style="font-size: 1.4rem; font-weight: 800;"><i class="fa-solid fa-store" style="color: #FF6B00;"></i> 사장님 대시보드</h2>
+            <i class="fa-solid fa-xmark" style="font-size: 1.5rem; cursor: pointer;" onclick="closeMerchantMode()"></i>
+        </div>
+        <div class="dash-card">
+            <h4>오늘 우리 가게 찜한 유저</h4>
+            <div class="dash-num">45 <span style="font-size: 1rem; color: #94A3B8; font-weight: 400;">명 (소셜 코스 1위)</span></div>
+        </div>
+        <div class="dash-card">
+            <h4>현재 주차장 혼잡도 (실시간)</h4>
+            <div class="dash-num" style="color: #10B981;">여유 <span style="font-size: 1rem; color: #94A3B8; font-weight: 400;">(25대 가능)</span></div>
+        </div>
+        <div class="dash-card">
+            <h4>👥 연령대별 2차 핫플 트렌드</h4>
+            <div style="font-size: 1rem; line-height: 1.8;">
+                <span style="color:#FF6B00; font-weight:bold;">🔥 20대:</span> 하슬라밤 (38%) / 금별맥주 (25%)<br>
+                <span style="color:#10B981; font-weight:bold;">💼 30대:</span> 온도 (41%) / 무국적식탁 (30%)<br>
+                <span style="color:#8B5CF6; font-weight:bold;">🍷 40대~:</span> 휴빈커피 (45%) / 이밤 한식주점 (20%)
+            </div>
+        </div>
+    </div>
+
+    <!-- 하단 네비게이션 -->
+    <nav>
+        <div class="nav-item active" onclick="switchTab('home', this)"><i class="fa-solid fa-house"></i>홈</div>
+        <div class="nav-item" onclick="switchTab('map', this)"><i class="fa-solid fa-map-location-dot"></i>유천맵</div>
+        <div class="nav-item" onclick="switchTab('pay', this)"><i class="fa-solid fa-ticket"></i>결제</div>
+        <div class="nav-item" onclick="switchTab('terrace', this)"><i class="fa-solid fa-comment-dots"></i>테라스</div>
+        <div class="nav-item" onclick="switchTab('myinfo', this)"><i class="fa-solid fa-user"></i>내정보</div>
+    </nav>
+</div>
+
+<script>
+    // 🚀 인트로 애니메이션
+    function enterApp() {
+        const splash = document.getElementById('splash-screen');
+        splash.style.opacity = '0';
+        setTimeout(() => { splash.style.display = 'none'; }, 600);
+    }
+
+    // 🎪 플리마켓 페이지 토글 함수
+    function openFleaMarket() {
+        document.getElementById('flea-market-view').style.display = 'flex';
+    }
+    function closeFleaMarket() {
+        document.getElementById('flea-market-view').style.display = 'none';
+    }
+
+    const shopDB = [
+        // --- 든든한 식사 ---
+        { name: "제주골", category: "든든한 식사", lat: 37.757813, lng: 128.870676, time: "17:00 - 23:00", menu: "제주 흑돼지 오겹살", open: 17, close: 23, onnuri: true },
+        { name: "소바니이루", category: "든든한 식사", lat: 37.756733, lng: 128.869555, time: "11:30 - 21:00", menu: "정통 일본식 텐동", open: 11, close: 21, onnuri: true },
+        { name: "구라미한우촌", category: "든든한 식사", lat: 37.757881, lng: 128.867570, time: "16:00 - 22:00", menu: "한우 모둠 구이", open: 16, close: 22, onnuri: true },
+        { name: "유천동뼈해장국", category: "든든한 식사", lat: 37.756860, lng: 128.867731, time: "10:00 - 22:00", menu: "얼큰 뼈해장국", open: 10, close: 22, onnuri: true },
+        { name: "강릉금식당", category: "든든한 식사", lat: 37.757444, lng: 128.871149, time: "11:00 - 21:00", menu: "정갈한 한식", open: 11, close: 21, onnuri: true },
+        { name: "미미식당 유천점", category: "든든한 식사", lat: 37.757135, lng: 128.867659, time: "11:30 - 21:00", menu: "가정식 백반", open: 11, close: 21, onnuri: true },
+        { name: "오양수산 본점", category: "든든한 식사", lat: 37.756885, lng: 128.868360, time: "12:00 - 22:00", menu: "신선한 해산물", open: 12, close: 22, onnuri: true },
+        { name: "우리집맛찬", category: "든든한 식사", lat: 37.757810, lng: 128.868732, time: "11:00 - 20:00", menu: "엄마 손맛 반찬", open: 11, close: 20, onnuri: true },
+        { name: "워니식당", category: "든든한 식사", lat: 37.757181, lng: 128.868650, time: "11:30 - 21:30", menu: "맛있는 정식", open: 11, close: 21, onnuri: true },
+        { name: "청도회관", category: "든든한 식사", lat: 37.757199, lng: 128.870048, time: "17:00 - 24:00", menu: "레트로 냉삼겹", open: 17, close: 24, onnuri: true },
+        { name: "춘남식당", category: "든든한 식사", lat: 37.757455, lng: 128.866876, time: "11:00 - 22:00", menu: "푸짐한 전골", open: 11, close: 22, onnuri: true },
+        { name: "스시쿄코오", category: "든든한 식사", lat: 37.757006, lng: 128.868167, time: "11:30 - 22:00", menu: "프리미엄 초밥", open: 11, close: 22, onnuri: true },
+        { name: "스시생", category: "든든한 식사", lat: 37.756883, lng: 128.867884, time: "11:30 - 21:30", menu: "신선 생선초밥", open: 11, close: 21, onnuri: true },
+        { name: "춘리마라탕", category: "든든한 식사", lat: 37.757390, lng: 128.870116, time: "11:00 - 22:00", menu: "얼얼한 마라탕", open: 11, close: 22, onnuri: true },
+
+        // --- 분위기·술 ---
+        { name: "온도", category: "분위기·술", lat: 37.757030, lng: 128.868178, time: "18:00 - 02:00", menu: "감성 모듬 꼬치", open: 18, close: 2, onnuri: true },
+        { name: "이밤 한식주점", category: "분위기·술", lat: 37.757302, lng: 128.870655, time: "19:00 - 03:00", menu: "시그니처 하이볼", open: 19, close: 3, onnuri: true },
+        { name: "몽림 중식당", category: "분위기·술", lat: 37.757885, lng: 128.869523, time: "18:00 - 01:00", menu: "와인 & 치즈 플래터", open: 18, close: 1, onnuri: true },
+        { name: "무국적식탁", category: "분위기·술", lat: 37.757182, lng: 128.867366, time: "17:00 - 01:00", menu: "무국적 전골", open: 17, close: 1, onnuri: true },
+        { name: "오미즈", category: "분위기·술", lat: 37.757729, lng: 128.869183, time: "18:00 - 02:00", menu: "감성 이자카야", open: 18, close: 2, onnuri: true },
+        { name: "카이산", category: "분위기·술", lat: 37.756835, lng: 128.869594, time: "17:00 - 01:00", menu: "숙성회 전문", open: 17, close: 1, onnuri: true },
+        { name: "카이신", category: "분위기·술", lat: 37.756878, lng: 128.868195, time: "18:00 - 01:00", menu: "모듬 사시미", open: 18, close: 1, onnuri: true },
+        { name: "하슬라밤", category: "분위기·술", lat: 37.756743, lng: 128.869379, time: "18:00 - 02:00", menu: "감성 요리주점", open: 18, close: 2, onnuri: false },
+        { name: "금별맥주", category: "분위기·술", lat: 37.757496, lng: 128.867702, time: "17:00 - 03:00", menu: "시원한 살얼음맥주", open: 17, close: 3, onnuri: false },
+
+        // --- 가벼운 한끼 ---
+        { name: "엔젤코인노래방", category: "가벼운 한끼", lat: 37.757265, lng: 128.870039, time: "12:00 - 02:00", menu: "코인 노래방", open: 12, close: 2, onnuri: true },
+        { name: "가장맛있는족발 홍제점", category: "가벼운 한끼", lat: 37.757810, lng: 128.868732, time: "16:00 - 01:00", menu: "반반 족발", open: 16, close: 1, onnuri: true },
+        { name: "가마치통닭 유천점", category: "가벼운 한끼", lat: 37.756849, lng: 128.869581, time: "15:00 - 24:00", menu: "한 마리 통닭", open: 15, close: 24, onnuri: true },
+        { name: "꾸브라꼬숯불치킨", category: "가벼운 한끼", lat: 37.757451, lng: 128.871084, time: "16:00 - 01:00", menu: "숯불 양념치킨", open: 16, close: 1, onnuri: true },
+        { name: "맘스터치유천점", category: "가벼운 한끼", lat: 37.756757, lng: 128.869941, time: "10:30 - 22:30", menu: "싸이버거", open: 10, close: 22, onnuri: true },
+        { name: "BHC치킨 유천택지점", category: "가벼운 한끼", lat: 37.757242, lng: 128.870633, time: "12:00 - 24:00", menu: "뿌링클", open: 12, close: 24, onnuri: true },
+        { name: "페리카나 강릉유천점", category: "가벼운 한끼", lat: 37.756498, lng: 128.870062, time: "15:00 - 24:00", menu: "양념치킨", open: 15, close: 24, onnuri: true },
+        { name: "푸라닭치킨 강릉유천점", category: "가벼운 한끼", lat: 37.757098, lng: 128.870694, time: "15:00 - 24:00", menu: "블랙알리오", open: 15, close: 24, onnuri: true },
+        { name: "훌랄라숯불치킨 강릉유천점", category: "가벼운 한끼", lat: 37.757493, lng: 128.868335, time: "16:00 - 01:00", menu: "참숯 핫바베큐", open: 16, close: 1, onnuri: true },
+        { name: "얌샘김밥 강릉유천점", category: "가벼운 한끼", lat: 37.756820, lng: 128.870156, time: "09:00 - 21:00", menu: "모다기", open: 9, close: 21, onnuri: true },
+        { name: "국수나무 강릉유천점", category: "가벼운 한끼", lat: 37.757726, lng: 128.868704, time: "11:00 - 21:00", menu: "생면국수", open: 11, close: 21, onnuri: true },
+
+        // --- 카페·디저트 ---
+        { name: "배스킨라빈스 강릉유천점", category: "카페·디저트", lat: 37.756765, lng: 128.870134, time: "10:00 - 23:00", menu: "쿼터 아이스크림", open: 10, close: 23, onnuri: true },
+        { name: "휴빈커피", category: "카페·디저트", lat: 37.757183, lng: 128.867873, time: "11:00 - 23:00", menu: "핸드드립 커피", open: 11, close: 23, onnuri: true },
+        { name: "달리는커피 강릉유천점", category: "카페·디저트", lat: 37.756766, lng: 128.868844, time: "09:00 - 20:00", menu: "신선한 샌드위치", open: 9, close: 20, onnuri: true },
+        { name: "더벤티 강릉유천점", category: "카페·디저트", lat: 37.757265, lng: 128.870039, time: "08:00 - 22:00", menu: "아이스 아메리카노", open: 8, close: 22, onnuri: true },
+        { name: "메가커피 강릉유천지구점", category: "카페·디저트", lat: 37.757829, lng: 128.869305, time: "08:00 - 22:00", menu: "메가리카노", open: 8, close: 22, onnuri: true },
+        { name: "백억커피 강릉유천점", category: "카페·디저트", lat: 37.757812, lng: 128.869083, time: "09:00 - 22:00", menu: "백억커피", open: 9, close: 22, onnuri: true },
+        { name: "빽다방 강릉유천점", category: "카페·디저트", lat: 37.757913, lng: 128.869556, time: "08:30 - 22:00", menu: "원조커피", open: 8, close: 22, onnuri: true },
+        { name: "컴포즈 강릉유천지구점", category: "카페·디저트", lat: 37.756868, lng: 128.870133, time: "08:00 - 22:00", menu: "아메리카노", open: 8, close: 22, onnuri: true },
+        { name: "어썸커피", category: "카페·디저트", lat: 37.757189, lng: 128.868822, time: "10:00 - 22:00", menu: "스페셜티 커피", open: 10, close: 22, onnuri: true },
+
+        // --- 생활·편의 ---
+        { name: "살롱이노", category: "생활·편의", lat: 37.757828, lng: 128.868062, time: "10:00 - 20:00", menu: "헤어 스타일링", open: 10, close: 20, onnuri: true },
+        { name: "도도헤어", category: "생활·편의", lat: 37.753595, lng: 128.896856, time: "10:00 - 20:00", menu: "헤어 펌/염색", open: 10, close: 20, onnuri: true },
+        { name: "디엠헤어", category: "생활·편의", lat: 37.757843, lng: 128.868739, time: "10:00 - 20:00", menu: "여성/남성 컷", open: 10, close: 20, onnuri: true },
+        { name: "바미살롱", category: "생활·편의", lat: 37.757320, lng: 128.870675, time: "10:00 - 20:00", menu: "프리미엄 헤어케어", open: 10, close: 20, onnuri: true },
+        { name: "헤어살롱동백", category: "생활·편의", lat: 37.757295, lng: 128.866721, time: "10:00 - 20:00", menu: "퍼스널 헤어", open: 10, close: 20, onnuri: true },
+        { name: "수경헤어", category: "생활·편의", lat: 37.757018, lng: 128.867375, time: "10:00 - 20:00", menu: "헤어 클리닉", open: 10, close: 20, onnuri: true },
+        { name: "에코레비헤어앤스파", category: "생활·편의", lat: 37.757813, lng: 128.870676, time: "10:00 - 20:00", menu: "헤어 & 두피스파", open: 10, close: 20, onnuri: true },
+        { name: "엘리스헤어", category: "생활·편의", lat: 37.757710, lng: 128.868481, time: "10:00 - 20:00", menu: "트렌드 펌", open: 10, close: 20, onnuri: true },
+        { name: "임뷰티 강릉1호점", category: "생활·편의", lat: 37.757167, lng: 128.867703, time: "11:00 - 21:00", menu: "토탈 뷰티 케어", open: 11, close: 21, onnuri: true },
+        { name: "헤어살롱줄리엣", category: "생활·편의", lat: 37.756835, lng: 128.869594, time: "10:00 - 20:00", menu: "헤어 디자이닝", open: 10, close: 20, onnuri: true },
+        { name: "노부영영어드림", category: "생활·편의", lat: 37.757302, lng: 128.870655, time: "13:00 - 19:00", menu: "초중등 영어", open: 13, close: 19, onnuri: true },
+        { name: "도담도담태권도 2관", category: "생활·편의", lat: 37.760736, lng: 128.870450, time: "13:00 - 21:00", menu: "유아/초등 체육", open: 13, close: 21, onnuri: true },
+        { name: "아이캔율곡태권도", category: "생활·편의", lat: 37.756833, lng: 128.869596, time: "13:00 - 21:00", menu: "정통 태권도", open: 13, close: 21, onnuri: true },
+        { name: "그림아트스튜디오", category: "생활·편의", lat: 37.756833, lng: 128.869596, time: "13:00 - 19:00", menu: "창의 미술", open: 13, close: 19, onnuri: true },
+        { name: "하슬라한의원", category: "생활·편의", lat: 37.756805, lng: 128.870113, time: "09:30 - 18:30", menu: "한방 진료", open: 9, close: 18, onnuri: true },
+        { name: "맘드림한의원", category: "생활·편의", lat: 37.757102, lng: 128.870694, time: "09:30 - 18:30", menu: "여성/소아 한방", open: 9, close: 18, onnuri: true },
+        { name: "위드동물병원", category: "생활·편의", lat: 37.757040, lng: 128.868337, time: "10:00 - 19:00", menu: "반려동물 진료", open: 10, close: 19, onnuri: true }
+    ];
+
+    const courseData = {
+        relax: { title: "Relax Lounge", subtitle: "20대 / 가성비 중심", color: "var(--theme-relax)", routes: [ { time: "18:00~", place: "가마치통닭 유천점", desc: "바삭한 통닭으로 든든하게 시작!", walk: "출발" }, { time: "19:30~", place: "무국적식탁", desc: "다채로운 퓨전으로 분위기 업.", walk: "도보 3분" }, { time: "21:00~", place: "엔젤코인노래방", desc: "신나는 노래방으로 에너지 폭발!", walk: "도보 2분" }, { time: "22:30~", place: "하슬라밤", desc: "감성 요리주점에서 완벽한 마무리.", walk: "도보 2분" } ] },
+        social: { title: "Social Lounge", subtitle: "직장인 / 30~40대", color: "var(--theme-social)", routes: [ { time: "18:00~", place: "구라미한우촌", desc: "고급 한우로 특별한 저녁 시작.", walk: "출발" }, { time: "19:30~", place: "무국적식탁", desc: "퓨전 다이닝으로 저녁 하이라이트.", walk: "도보 2분" }, { time: "21:00~", place: "온도", desc: "분위기 있는 2차 한 잔.", walk: "도보 2분" }, { time: "22:30~", place: "이밤 한식주점", desc: "깊어가는 밤, 완벽한 마무리.", walk: "도보 3분" } ] },
+        date: { title: "Date Lounge", subtitle: "연인 / 로맨틱 데이트", color: "var(--theme-date)", routes: [ { time: "18:00~", place: "소바니이루", desc: "조용한 감성 소바로 데이트 시작.", walk: "출발" }, { time: "19:30~", place: "휴빈커피", desc: "둘만의 여유로운 카페 타임.", walk: "도보 2분" }, { time: "20:30~", place: "금별맥주", desc: "시원한 살얼음맥주로 분위기 업.", walk: "도보 3분" }, { time: "21:30~", place: "무국적식탁", desc: "퓨전 다이닝으로 특별한 밤 마무리.", walk: "도보 3분" } ] },
+        family: { title: "Family Lounge", subtitle: "가족 단위 / 생활권 가족", color: "var(--theme-family)", routes: [ { time: "17:30~", place: "제주골", desc: "온 가족 제주 흑돼지로 든든하게.", walk: "출발" }, { time: "19:00~", place: "가장맛있는족발 홍제점", desc: "야식으로 족발 한 판, 온 가족 만족!", walk: "도보 3분" }, { time: "20:30~", place: "휴빈커피", desc: "식사 후 가족 함께 카페 타임.", walk: "도보 4분" }, { time: "21:30~", place: "배스킨라빈스 강릉유천점", desc: "아이들과 달콤한 아이스크림 마무리.", walk: "도보 2분" } ] }
+    };
+
+    let map = null;
+    let markers = [];
+    let customOverlays = [];
+    let currentPolylines = [];
+    let currentTheme = '';
+    let isOpenNowFilterOn = false;
+
+    function switchTab(tabId, navElement = null) {
+        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+        if(tabId === 'course') return;
+        
+        document.getElementById('tab-' + tabId).classList.add('active');
+        
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        if (navElement) {
+            navElement.classList.add('active');
+        } else {
+            document.querySelectorAll('.nav-item').forEach(tab => {
+                if(tab.getAttribute('onclick').includes(tabId)) tab.classList.add('active');
+            });
+        }
+        closeRoadmap();
+        closeBottomSheet();
+        closeMerchantMode();
+
+        if (tabId === 'map') {
+            setTimeout(() => {
+                if (!map) {
+                    initKakaoMap();
+                } else {
+                    map.relayout();
+                    moveToParking();
+                }
+            }, 50);
+        }
+    }
+
+    function scrollFilter(amount) {
+        document.getElementById('map-filter-scroll').scrollBy({ left: amount, behavior: 'smooth' });
+    }
+
+    function initKakaoMap() {
+        const mapContainer = document.getElementById('kakao-map');
+        const mapOption = { center: new kakao.maps.LatLng(37.7573, 128.8685), level: 3 };
+        map = new kakao.maps.Map(mapContainer, mapOption);
+
+        var parkingPos = new kakao.maps.LatLng(37.757830, 128.872038); 
+        var parkingContent = '<div onclick="openParkingInfo()" style="cursor:pointer; background:#2D2D2D; color:white; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; box-shadow:0 2px 5px rgba(0,0,0,0.3); font-weight:bold; font-size:14px;">P</div>';
+        new kakao.maps.CustomOverlay({ position: parkingPos, content: parkingContent, yAnchor: 1 }).setMap(map);
+
+        renderKakaoMarkers('all');
+    }
+
+    function moveToParking() {
+        if(map) map.panTo(new kakao.maps.LatLng(37.757830, 128.872038));
+    }
+
+    function clearMap() {
+        markers.forEach(m => m.setMap(null)); markers = [];
+        customOverlays.forEach(o => o.setMap(null)); customOverlays = [];
+        currentPolylines.forEach(p => p.setMap(null)); currentPolylines = [];
+    }
+
+    function renderKakaoMarkers(category) {
+        if(!map) return;
+        clearMap();
+        
+        const currentHour = 20;
+        const svgMarker = `data:image/svg+xml;utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="7" fill="%23FF6B00" stroke="white" stroke-width="2.5"/></svg>`;
+        var markerImage = new kakao.maps.MarkerImage(svgMarker, new kakao.maps.Size(20, 20), {offset: new kakao.maps.Point(10, 10)});
+
+        shopDB.forEach(shop => {
+            let showMarker = true;
+            if (category !== 'all' && shop.category !== category) showMarker = false;
+            
+            if (isOpenNowFilterOn) {
+                let closeTime = shop.close === 24 ? 24 : shop.close < shop.open ? shop.close + 24 : shop.close;
+                let cHour = currentHour < shop.open ? currentHour + 24 : currentHour;
+                if (!(cHour >= shop.open && cHour < closeTime)) showMarker = false;
+            }
+
+            if (showMarker) {
+                var pos = new kakao.maps.LatLng(shop.lat, shop.lng);
+                var marker = new kakao.maps.Marker({ position: pos, image: markerImage, clickable: true });
+                marker.setMap(map);
+                markers.push(marker);
+
+                kakao.maps.event.addListener(marker, 'click', function() {
+                    openBottomSheet(shop);
+                    map.panTo(new kakao.maps.LatLng(shop.lat - 0.0005, shop.lng));
+                });
+            }
+        });
+    }
+
+    function activateFilter(element, category) {
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            if(chip.id !== 'filter-open') chip.classList.remove('active');
+        });
+        element.classList.add('active');
+        closeBottomSheet();
+        renderKakaoMarkers(category);
+    }
+
+    function toggleOpenNow(element) {
+        isOpenNowFilterOn = !isOpenNowFilterOn;
+        if(isOpenNowFilterOn) {
+            element.style.background = '#10B981';
+            element.style.color = 'white';
+        } else {
+            element.style.background = 'white';
+            element.style.color = '#10B981';
+        }
+        const activeCategory = document.querySelector('.filter-chip.active:not(#filter-open)').innerText.replace(/.* /,'').trim();
+        renderKakaoMarkers(activeCategory === '전체보기' ? 'all' : activeCategory);
+    }
+
+    function openParkingInfo() {
+        document.getElementById('bs-category').innerText = "공영주차장";
+        document.getElementById('bs-name').innerText = "유천지구 공영주차장";
+        document.getElementById('bs-time').innerText = "24시간 (카드 전용)";
+        document.getElementById('bs-status').innerText = ""; 
+        document.getElementById('bs-menu-icon').className = "fa-solid fa-car"; 
+        document.getElementById('bs-menu').innerHTML = "20:00~08:00 무료<br>최초 30분 600원 / 초과 10분당 300원<br>일일 최대 10,000원";
+        
+        document.getElementById('bs-ticket-row').style.display = 'none';
+        document.getElementById('shop-bottom-sheet').classList.add('active');
+    }
+
+    function openBottomSheet(shop) {
+        document.getElementById('bs-category').innerText = shop.category;
+        document.getElementById('bs-name').innerText = shop.name;
+        document.getElementById('bs-time').innerText = shop.time;
+        document.getElementById('bs-menu-icon').className = "fa-solid fa-utensils";
+        document.getElementById('bs-menu').innerText = shop.menu;
+        document.getElementById('bs-status').innerText = "영업중";
+        
+        if(shop.onnuri) {
+            document.getElementById('bs-ticket-row').style.display = 'flex';
+        } else {
+            document.getElementById('bs-ticket-row').style.display = 'none';
+        }
+
+        document.getElementById('shop-bottom-sheet').classList.add('active');
+    }
+    
+    function openBottomSheetFromCourse(shopName) {
+        const shop = shopDB.find(s => s.name === shopName);
+        if(shop) openBottomSheet(shop);
+    }
+
+    function closeBottomSheet() {
+        document.getElementById('shop-bottom-sheet').classList.remove('active');
+    }
+
+    function openRoadmap(themeId) {
+        currentTheme = themeId;
+        const data = courseData[themeId];
+        document.getElementById('theme-title').innerText = data.title;
+        document.getElementById('theme-subtitle').innerText = data.subtitle;
+        document.getElementById('theme-banner-bg').style.backgroundColor = data.color;
+        document.documentElement.style.setProperty('--current-theme', data.color);
+
+        const timeline = document.getElementById('timeline-container');
+        timeline.innerHTML = '';
+        data.routes.forEach(route => {
+            timeline.innerHTML += `
+                <div class="timeline-item" onclick="openBottomSheetFromCourse('${route.place}')">
+                    <div style="display:flex; justify-content:space-between;">
+                        <div style="font-size: 0.8rem; font-weight: 700; color: #9CA3AF; margin-bottom: 5px;">${route.time}</div>
+                    </div>
+                    <div style="font-size: 1.05rem; font-weight: 700; color: var(--brand-dark); margin-bottom: 4px;">${route.place}</div>
+                    <div style="font-size: 0.85rem; color: #666; margin-top: 4px; line-height: 1.4;">${route.desc}</div>
+                    <div class="walk-badge"><i class="fa-solid fa-person-walking"></i> ${route.walk}</div>
+                </div>
+            `;
+        });
+        document.getElementById('roadmap-view').style.display = 'flex';
+    }
+
+    function closeRoadmap() {
+        document.getElementById('roadmap-view').style.display = 'none';
+        closeBottomSheet();
+    }
+
+    function drawKakaoRoute() {
+        switchTab('map');
+        
+        setTimeout(() => {
+            document.querySelectorAll('.filter-chip:not(#filter-open)').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.filter-chip:not(#filter-open)')[0].classList.add('active');
+            clearMap();
+
+            var linePath = [];
+            var bounds = new kakao.maps.LatLngBounds();
+            const data = courseData[currentTheme];
+            
+            data.routes.forEach((route, index) => {
+                const shop = shopDB.find(s => s.name === route.place);
+                if (shop) {
+                    var pos = new kakao.maps.LatLng(shop.lat, shop.lng);
+                    linePath.push(pos);
+                    bounds.extend(pos);
+
+                    const content = document.createElement('div');
+                    content.className = 'map-marker-overlay';
+                    content.style.setProperty('--marker-color', data.color);
+                    content.onclick = () => openBottomSheet(shop);
+                    
+                    const num = document.createElement('div');
+                    num.className = 'map-marker-num';
+                    num.innerText = index + 1;
+                    
+                    const text = document.createElement('div');
+                    text.className = 'map-marker-text';
+                    text.innerText = shop.name;
+                    
+                    content.appendChild(num);
+                    content.appendChild(text);
+
+                    var overlay = new kakao.maps.CustomOverlay({
+                        position: pos, content: content, yAnchor: 1.2
+                    });
+                    overlay.setMap(map);
+                    customOverlays.push(overlay);
+                }
+            });
+
+            if(linePath.length > 0) {
+                var polyline = new kakao.maps.Polyline({
+                    path: linePath, strokeWeight: 4, strokeColor: data.color, strokeOpacity: 0.8, strokeStyle: 'solid'
+                });
+                polyline.setMap(map);
+                currentPolylines.push(polyline);
+                map.setBounds(bounds);
+            }
+        }, 100);
+    }
+
+    function openMerchantMode() {
+        document.getElementById('merchant-view').style.display = 'flex';
+    }
+    function closeMerchantMode() {
+        document.getElementById('merchant-view').style.display = 'none';
+    }
+</script>
+</body>
+</html>
